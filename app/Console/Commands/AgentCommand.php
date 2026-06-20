@@ -43,7 +43,7 @@ class AgentCommand extends Command
             $prompt = text('What is on your mind?', required: true);
 
             $this->history[] = [
-                'role' => 'user',
+                'role'    => 'user',
                 'content' => $prompt,
             ];
 
@@ -56,7 +56,7 @@ class AgentCommand extends Command
                 $this->history = [...$this->history, ...$response['output']]; // similar array merge
 
                 $functionCalls = collect($response['output'])
-                    ->filter(fn ($item) => $item['type'] === 'function_call');
+                                    ->filter(fn ($item) => $item['type'] === 'function_call');
 
                 if ($functionCalls->isEmpty()) {
                     $this->info($response['output'][0]['content'][0]['text']);
@@ -70,9 +70,9 @@ class AgentCommand extends Command
                     if ($call['name'] === 'get_current_time') {
 
                         $this->history[] = [
-                            'type' => 'function_call_output',
+                            'type'    => 'function_call_output',
                             'call_id' => $call['call_id'],
-                            'output' => now()->toIso8601String(),
+                            'output'  => now()->toIso8601String(),
                         ];
                     }
 
@@ -81,9 +81,9 @@ class AgentCommand extends Command
                     if ($call['name'] === 'read_file') {
 
                         $this->history[] = [
-                            'type' => 'function_call_output',
+                            'type'    => 'function_call_output',
                             'call_id' => $call['call_id'],
-                            'output' => file_get_contents(
+                            'output'  => file_get_contents(
                                 base_path(json_decode($call['arguments'])->path)
                             ),
 
@@ -140,9 +140,9 @@ class AgentCommand extends Command
                     if ($call['name'] === 'get_current_time') {
 
                         $this->history[] = [
-                            'type' => 'function_call_output',
+                            'type'    => 'function_call_output',
                             'call_id' => $call['call_id'],
-                            'output' => now()->toIso8601String(),
+                            'output'  => now()->toIso8601String(),
                         ];
                     }
 
@@ -151,9 +151,9 @@ class AgentCommand extends Command
                     if ($call['name'] === 'read_file') {
 
                         $this->history[] = [
-                            'type' => 'function_call_output',
+                            'type'    => 'function_call_output',
                             'call_id' => $call['call_id'],
-                            'output' => file_get_contents(
+                            'output'  => file_get_contents(
                                 base_path(json_decode($call['arguments'])->path)
                             ),
 
