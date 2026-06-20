@@ -3,6 +3,9 @@
 // # ========== 21/Jun/2026 Sunday Added =================
 // # TASK Purpose:: Register the dialog Artisan command with Laravel Prompts and OpenAI.
 // # ========== 21/Jun/2026 Sunday Added =================
+// # ========== 21/Jun/2026 Sunday Added =================
+// # TASK Purpose:: Prevent the agent command from printing the final response twice.
+// # ========== 21/Jun/2026 Sunday Added =================
 
 namespace App\Console\Commands;
 
@@ -11,9 +14,9 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
+use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
 use function Laravel\Prompts\text;
-use function Laravel\Prompts\info;
 
 #[Signature('agent')]
 #[Description('Converse with OpenAI using Tools.')]
@@ -36,11 +39,11 @@ class AgentCommand extends Command
         }
 
         while (true) {
-        
+
             $prompt = text('What is on your mind?', required: true);
 
             $this->history[] = [
-                'role'    => 'user',
+                'role' => 'user',
                 'content' => $prompt,
             ];
 
@@ -49,58 +52,52 @@ class AgentCommand extends Command
                     fn (): array => $this->runModel(),
                     'Hm... thinking about that.'
                 );
-    
-                $this->history = [...$this->history, ...$response['output']]; //similar array merge
+
+                $this->history = [...$this->history, ...$response['output']]; // similar array merge
 
                 $functionCalls = collect($response['output'])
-                                    ->filter(fn ($item) => $item['type'] === 'function_call');
+                    ->filter(fn ($item) => $item['type'] === 'function_call');
 
                 if ($functionCalls->isEmpty()) {
                     $this->info($response['output'][0]['content'][0]['text']);
                     break;
                 }
 
-                $functionCalls->each(function (array $call){
+                $functionCalls->each(function (array $call) {
 
                     info('Running Tool: '.$call['name'].'('.json_encode($call['arguments']).')');
 
                     if ($call['name'] === 'get_current_time') {
-                        
+
                         $this->history[] = [
-                            'type'    => 'function_call_output',
+                            'type' => 'function_call_output',
                             'call_id' => $call['call_id'],
-                            'output'  => now()->toIso8601String(),
+                            'output' => now()->toIso8601String(),
                         ];
                     }
-                    
-                    //dump($call);
+
+                    // dump($call);
 
                     if ($call['name'] === 'read_file') {
-                        
+
                         $this->history[] = [
-                            'type'    => 'function_call_output',
+                            'type' => 'function_call_output',
                             'call_id' => $call['call_id'],
-                            'output'  => file_get_contents( 
-                                base_path(json_decode($call['arguments'])->path) 
-                            )
-                            
+                            'output' => file_get_contents(
+                                base_path(json_decode($call['arguments'])->path)
+                            ),
+
                         ];
                     }
                 });
 
-    
-                //dump($response['output']
-    
+                // dump($response['output']
+
             }
 
-            
-            
+            // dump($this->history);
 
-            //dump($this->history);
-
-            $this->info($response['output'][0]['content'][0]['text']);
         }
-
 
         return self::SUCCESS;
     }
@@ -118,11 +115,11 @@ class AgentCommand extends Command
         }
 
         while (true) {
-        
+
             $prompt = text('What is on your mind?', required: true);
 
             $this->history[] = [
-                'role'    => 'user',
+                'role' => 'user',
                 'content' => $prompt,
             ];
 
@@ -131,52 +128,48 @@ class AgentCommand extends Command
                     fn (): array => $this->runModel(),
                     'Hm... thinking about that.'
                 );
-    
-                $this->history = [...$this->history, ...$response['output']]; //similar array merge
 
-                //AI is saying .. hey can I run get_current_time tool?
-    
+                $this->history = [...$this->history, ...$response['output']]; // similar array merge
+
+                // AI is saying .. hey can I run get_current_time tool?
+
                 if ($response['output'][0]['type'] === 'function_call') {
-                    
+
                     $call = $response['output'][0];
-    
+
                     if ($call['name'] === 'get_current_time') {
-                        
+
                         $this->history[] = [
-                            'type'    => 'function_call_output',
+                            'type' => 'function_call_output',
                             'call_id' => $call['call_id'],
-                            'output'  => now()->toIso8601String(),
+                            'output' => now()->toIso8601String(),
                         ];
                     }
-                    
-                    //dump($call);
+
+                    // dump($call);
 
                     if ($call['name'] === 'read_file') {
-                        
+
                         $this->history[] = [
-                            'type'    => 'function_call_output',
+                            'type' => 'function_call_output',
                             'call_id' => $call['call_id'],
-                            'output'  => file_get_contents( 
-                                base_path(json_decode($call['arguments'])->path) 
-                            )
-                            
+                            'output' => file_get_contents(
+                                base_path(json_decode($call['arguments'])->path)
+                            ),
+
                         ];
                     }
-                }else{
-                    //$this->info($response['output'][0]['content'][0]['text']);
-                    //break;
+                } else {
+                    // $this->info($response['output'][0]['content'][0]['text']);
+                    // break;
                 }
-    
+
             }
 
-            
-            
-
-            //dump($this->history);
+            // dump($this->history);
 
             $this->info($response['output'][0]['content'][0]['text']);
         }
-
 
         return self::SUCCESS;
     }
@@ -197,29 +190,29 @@ class AgentCommand extends Command
                 'instructions' => 'You are a helpful assistant.',
                 'input' => $this->history,
                 'tools' => [
-                [
-                    'type' => 'function',
-                    'name' => 'get_current_time',
-                    'description' => 'Get the current server time as an ISO8601 string.',
-                ],
-                [
-                    'type' => 'function',
-                    'name' => 'read_file',
-                    'description' => 'Read the contents of a file, relative to the project root.',
-                    'parameters'  => [
-                        'type'       => 'object',
-                        'properties' => [
-                            'path' => [
-                                'type'        => 'string',
-                                'description' => 'The relative path to the file.',
-                            ],
-                        ],
-                        'required'             => ['path'],
-                        'additionalProperties' => false,
+                    [
+                        'type' => 'function',
+                        'name' => 'get_current_time',
+                        'description' => 'Get the current server time as an ISO8601 string.',
                     ],
-                    'strict' => true,
-                  ]
-            ],
+                    [
+                        'type' => 'function',
+                        'name' => 'read_file',
+                        'description' => 'Read the contents of a file, relative to the project root.',
+                        'parameters' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'path' => [
+                                    'type' => 'string',
+                                    'description' => 'The relative path to the file.',
+                                ],
+                            ],
+                            'required' => ['path'],
+                            'additionalProperties' => false,
+                        ],
+                        'strict' => true,
+                    ],
+                ],
             ])
             ->throw()
             ->json();
