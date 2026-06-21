@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 
 use App\Ai\Tools\CurrentTime;
 use App\Ai\Tools\ReadFile;
+use App\Ai\Tools\Revenue;
 use App\Ai\Tools\Tool;
 
 use Illuminate\Console\Attributes\Description;
@@ -78,7 +79,7 @@ class AgentCommand extends Command
                             $this->history[] = [
                                 'type'    => 'function_call_output',
                                 'call_id' => $call['call_id'],
-                                'output'  => $result,
+                                'output'  => (string)$result,
                             ];
 
                         }
@@ -305,6 +306,7 @@ class AgentCommand extends Command
         return [
             new CurrentTime,
             new ReadFile,
+            new Revenue,
         ];
     }
 

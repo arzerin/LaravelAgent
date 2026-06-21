@@ -2,7 +2,7 @@
 
 namespace App\Ai\Tools;
 
-
+use App\Ai\Tools\Tool;
 use function file_get_contents;
 use function json_decode;
 
@@ -11,8 +11,8 @@ class ReadFile implements Tool
     public function definition(): array
     {
         return [
-            'type' => 'function',
-            'name' => 'read_file',
+            'type'        => 'function',
+            'name'        => 'read_file',
             'description' => 'Read the contents of a file, relative to the project root.',
             'parameters'  => [
                 'type'       => 'object',
