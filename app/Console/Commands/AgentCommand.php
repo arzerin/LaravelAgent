@@ -23,7 +23,7 @@ use function Laravel\Prompts\spin;
 use function Laravel\Prompts\text;
 
 #[Signature('agent')]
-#[Description('Converse with OpenAI using Tools.')]
+#[Description('Interact as agent')]
 class AgentCommand extends Command
 {
     /**
@@ -59,18 +59,22 @@ class AgentCommand extends Command
 
                 $this->history = [...$this->history, ...$response['output']]; // similar array merge
 
-                $functionCalls = collect($response['output'])
+                $toolCalls = collect($response['output'])
                                     ->filter(fn ($item) => $item['type'] === 'function_call');
 
-                if ($functionCalls->isEmpty()) {
+                if ($toolCalls->isEmpty()) {
                     $this->info($response['output'][0]['content'][0]['text']);
                     break;
                 }
 
-                $functionCalls->each(function (array $call) {
+                $toolCalls->each(function (array $call) {
 
-                    info('Running Tool: '.$call['name'].'('.json_encode($call['arguments']).')');
+                   // info('Running Tool: '.$call['name'].'('.json_encode($call['arguments']).')');
+                    info('Running Tool: '.$call['name']);
 
+                    $this->runTools($call);
+
+                    /*
                     foreach($this->tools() as $tool)
                     {
                         if ($tool->definition()['name'] === $call['name']) {
@@ -85,6 +89,8 @@ class AgentCommand extends Command
                         }
 
                     }
+                        */
+
                     /*
                     if ($call['name'] === 'get_current_time') {
 
@@ -120,6 +126,29 @@ class AgentCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+     /**
+     * @param array $coll
+     * @return void
+     */
+    
+    public function runTools(array $call): void
+    {
+        foreach($this->tools() as $tool)
+        {
+            if ($tool->definition()['name'] === $call['name']) {
+                $result  = $tool->use(json_decode($call['arguments'], associative: true));
+
+                $this->history[] = [
+                    'type'    => 'function_call_output',
+                    'call_id' => $call['call_id'],
+                    'output'  => (string)$result,
+                ];
+
+            }
+
+        }
     }
 
     /**
@@ -293,6 +322,21 @@ class AgentCommand extends Command
                 //     new ReadFile(),
                 // ]
                 'tools' => array_map(fn (Tool $tool) => $tool->definition(), $this->tools()),
+                'text' => [
+                    'format' => [
+                        'type'   => 'json_schema',
+                        'name'   => 'assistant_response',
+                        'strict' => true,
+                        'schema' => [
+                            'type'       => 'object',
+                            'properties' => [
+                                'response'   => ['type' => 'string'],
+                            ],
+                            'required'             => ['response'],
+                            'additionalProperties' => false,
+                        ],
+                    ],
+                ],
             ])
             ->throw()
             ->json();
