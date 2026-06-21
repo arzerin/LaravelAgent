@@ -124,6 +124,7 @@ class AgentCommand extends Command
     /**
      * Execute the console command.
      */
+    /*
     public function handle_v2(): int
     {
         if (blank(config('services.openai.key'))) {
@@ -195,11 +196,13 @@ class AgentCommand extends Command
 
         return self::SUCCESS;
     }
+        */
 
     /**
      * Execute the console command.
      * Version 1 - use the top one which is more perfect
      */
+    /*
     public function handle_v1(): int
     {
         if (blank(config('services.openai.key'))) {
@@ -267,6 +270,7 @@ class AgentCommand extends Command
 
         return self::SUCCESS;
     }
+    */
 
     /**
      * @return array<string, mixed>
@@ -304,6 +308,7 @@ class AgentCommand extends Command
         ];
     }
 
+    /*
     private function runModel_v2(): array
     {
         return Http::withToken(config('services.openai.key'))
@@ -344,7 +349,9 @@ class AgentCommand extends Command
             ->throw()
             ->json();
     }
+    */        
 
+    /*
     private function runModel_v1(): array
     {
         return Http::withToken(config('services.openai.key'))
@@ -385,4 +392,5 @@ class AgentCommand extends Command
             ->throw()
             ->json();
     }
+    */        
 }
