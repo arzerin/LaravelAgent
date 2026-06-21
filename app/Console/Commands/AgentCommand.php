@@ -64,6 +64,7 @@ class AgentCommand extends Command
 
                 if ($toolCalls->isEmpty()) {
                     $this->info($response['output'][0]['content'][0]['text']);
+                    //dump(json_decode($response['output'][0]['content'][0]['text'], associative: true));
                     break;
                 }
 
@@ -72,7 +73,7 @@ class AgentCommand extends Command
                    // info('Running Tool: '.$call['name'].'('.json_encode($call['arguments']).')');
                     info('Running Tool: '.$call['name']);
 
-                    $this->runTools($call);
+                    $this->runTool($call);
 
                     /*
                     foreach($this->tools() as $tool)
@@ -133,7 +134,7 @@ class AgentCommand extends Command
      * @return void
      */
     
-    public function runTools(array $call): void
+    public function runTool(array $call): void
     {
         foreach($this->tools() as $tool)
         {
@@ -322,6 +323,7 @@ class AgentCommand extends Command
                 //     new ReadFile(),
                 // ]
                 'tools' => array_map(fn (Tool $tool) => $tool->definition(), $this->tools()),
+                /*
                 'text' => [
                     'format' => [
                         'type'   => 'json_schema',
@@ -330,13 +332,18 @@ class AgentCommand extends Command
                         'schema' => [
                             'type'       => 'object',
                             'properties' => [
-                                'response'   => ['type' => 'string'],
+                                //'response'   => ['type' => 'string'],
+                                'nouns'      => ['type' => 'string'],
+                                'adjectives' => ['type' => 'string'],
+                                'verbs'      => ['type' => 'string'],
                             ],
-                            'required'             => ['response'],
+                            //'required'             => ['response'],
+                            'required'             => ['nouns', 'adjectives', 'verbs'],
                             'additionalProperties' => false,
                         ],
                     ],
                 ],
+                */
             ])
             ->throw()
             ->json();
