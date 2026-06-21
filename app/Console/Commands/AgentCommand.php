@@ -1,18 +1,21 @@
 <?php
 
-// # ========== 21/Jun/2026 Sunday Added =================
-// # TASK Purpose:: Register the dialog Artisan command with Laravel Prompts and OpenAI.
-// # ========== 21/Jun/2026 Sunday Added =================
-// # ========== 21/Jun/2026 Sunday Added =================
-// # TASK Purpose:: Prevent the agent command from printing the final response twice.
-// # ========== 21/Jun/2026 Sunday Added =================
 
 namespace App\Console\Commands;
+
+use App\Ai\Tools\CurrentTime;
+use App\Ai\Tools\ReadFile;
+use App\Ai\Tools\Tool;
 
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+
+
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+
 
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
@@ -31,6 +34,97 @@ class AgentCommand extends Command
      * Execute the console command.
      */
     public function handle(): int
+    {
+        if (blank(config('services.openai.key'))) {
+            $this->error('Please set OPENAI_API_KEY in your environment.');
+
+            return self::FAILURE;
+        }
+
+        while (true) {
+
+            $prompt = text('What is on your mind?', required: true);
+
+            $this->history[] = [
+                'role'    => 'user',
+                'content' => $prompt,
+            ];
+
+            while (true) {
+                $response = spin(
+                    fn (): array => $this->runModel(),
+                    'Hm... thinking about that.'
+                );
+
+                $this->history = [...$this->history, ...$response['output']]; // similar array merge
+
+                $functionCalls = collect($response['output'])
+                                    ->filter(fn ($item) => $item['type'] === 'function_call');
+
+                if ($functionCalls->isEmpty()) {
+                    $this->info($response['output'][0]['content'][0]['text']);
+                    break;
+                }
+
+                $functionCalls->each(function (array $call) {
+
+                    info('Running Tool: '.$call['name'].'('.json_encode($call['arguments']).')');
+
+                    foreach($this->tools() as $tool)
+                    {
+                        if ($tool->definition()['name'] === $call['name']) {
+                            $result  = $tool->use(json_decode($call['arguments'], associative: true));
+
+                            $this->history[] = [
+                                'type'    => 'function_call_output',
+                                'call_id' => $call['call_id'],
+                                'output'  => $result,
+                            ];
+
+                        }
+
+                    }
+                    /*
+                    if ($call['name'] === 'get_current_time') {
+
+                        $this->history[] = [
+                            'type'    => 'function_call_output',
+                            'call_id' => $call['call_id'],
+                            'output'  => now()->toIso8601String(),
+                        ];
+                    }
+
+                    // dump($call);
+
+                    if ($call['name'] === 'read_file') {
+
+                        $this->history[] = [
+                            'type'    => 'function_call_output',
+                            'call_id' => $call['call_id'],
+                            'output'  => file_get_contents(
+                                base_path(json_decode($call['arguments'])->path)
+                            ),
+
+                        ];
+                    }
+                    */
+                });
+
+                // dump($response['output']
+
+            }
+
+            // dump($this->history);
+
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * Execute the console command.
+     */
+    public function handle_v2(): int
     {
         if (blank(config('services.openai.key'))) {
             $this->error('Please set OPENAI_API_KEY in your environment.');
@@ -189,6 +283,39 @@ class AgentCommand extends Command
                 'model' => 'gpt-5.4-nano',
                 'instructions' => 'You are a helpful assistant.',
                 'input' => $this->history,
+                // 'tools' => [
+                //     new CurrentTime(),
+                //     new ReadFile(),
+                // ]
+                'tools' => array_map(fn (Tool $tool) => $tool->definition(), $this->tools()),
+            ])
+            ->throw()
+            ->json();
+    }
+
+    /**
+     * @return array
+     */
+    public function tools(): array
+    {
+        return [
+            new CurrentTime,
+            new ReadFile,
+        ];
+    }
+
+    private function runModel_v2(): array
+    {
+        return Http::withToken(config('services.openai.key'))
+            ->acceptJson()
+            ->asJson()
+            ->timeout(30)
+            ->connectTimeout(10)
+            ->retry([100, 200])
+            ->post('https://api.openai.com/v1/responses', [
+                'model' => 'gpt-5.4-nano',
+                'instructions' => 'You are a helpful assistant.',
+                'input' => $this->history,
                 'tools' => [
                     [
                         'type' => 'function',
@@ -208,6 +335,47 @@ class AgentCommand extends Command
                                 ],
                             ],
                             'required' => ['path'],
+                            'additionalProperties' => false,
+                        ],
+                        'strict' => true,
+                    ],
+                ],
+            ])
+            ->throw()
+            ->json();
+    }
+
+    private function runModel_v1(): array
+    {
+        return Http::withToken(config('services.openai.key'))
+            ->acceptJson()
+            ->asJson()
+            ->timeout(30)
+            ->connectTimeout(10)
+            ->retry([100, 200])
+            ->post('https://api.openai.com/v1/responses', [
+                'model' => 'gpt-5.4-nano',
+                'instructions' => 'You are a helpful assistant.',
+                'input' => $this->history,
+                'tools' => [
+                    [
+                        'type'        => 'function',
+                        'name'        => 'get_current_time',
+                        'description' => 'Get the current server time as an ISO8601 string.',
+                    ],
+                    [
+                        'type' => 'function',
+                        'name' => 'read_file',
+                        'description' => 'Read the contents of a file, relative to the project root.',
+                        'parameters'  => [
+                            'type'       => 'object',
+                            'properties' => [
+                                'path' => [
+                                    'type'        => 'string',
+                                    'description' => 'The relative path to the file.',
+                                ],
+                            ],
+                            'required'             => ['path'],
                             'additionalProperties' => false,
                         ],
                         'strict' => true,
