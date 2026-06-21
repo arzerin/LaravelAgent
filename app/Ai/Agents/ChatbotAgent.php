@@ -4,8 +4,10 @@
 // # TASK Purpose:: Register the write_file tool for the chatbot agent.
 // # ========== 21/Jun/2026 Sunday Added =================
 
+
 namespace App\Ai\Agents;
 
+use App\Ai\Attributes\CompactsAfter;
 use App\Ai\Tools\CurrentTime;
 use App\Ai\Tools\Glob;
 use App\Ai\Tools\ListFiles;
@@ -15,6 +17,7 @@ use App\Ai\Tools\RunBash;
 use App\Ai\Tools\SearchFile;
 use App\Ai\Tools\WriteFile;
 
+#[CompactsAfter(3)]
 class ChatbotAgent extends Agent
 {
     public function instructions(): string
@@ -35,6 +38,7 @@ class ChatbotAgent extends Agent
             new WriteFile,
         ];
     }
+
     //    public function schema(): array
     //    {
     //        return [
