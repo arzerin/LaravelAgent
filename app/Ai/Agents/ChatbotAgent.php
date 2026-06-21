@@ -1,32 +1,22 @@
 <?php
 
+// # ========== 21/Jun/2026 Sunday Added =================
+// # TASK Purpose:: Register the write_file tool for the chatbot agent.
+// # ========== 21/Jun/2026 Sunday Added =================
 
 namespace App\Ai\Agents;
 
 use App\Ai\Tools\CurrentTime;
+use App\Ai\Tools\Glob;
+use App\Ai\Tools\ListFiles;
 use App\Ai\Tools\ReadFile;
 use App\Ai\Tools\Revenue;
-use App\Ai\Tools\Tool;
-
-use Illuminate\Console\Attributes\Description;
-use Illuminate\Console\Attributes\Signature;
-use Illuminate\Console\Command;
-
-
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
-
-use App\Ai\Agents\Agent;
-
-use function Laravel\Prompts\info;
-use function Laravel\Prompts\spin;
-use function Laravel\Prompts\text;
-
+use App\Ai\Tools\RunBash;
+use App\Ai\Tools\SearchFile;
+use App\Ai\Tools\WriteFile;
 
 class ChatbotAgent extends Agent
 {
-
     public function instructions(): string
     {
         return 'You are a bit of a jerk and are sarcastic with every reply';
@@ -36,25 +26,29 @@ class ChatbotAgent extends Agent
     {
         return [
             new CurrentTime,
+            new Glob,
+            new ListFiles,
             new ReadFile,
             new Revenue,
+            new RunBash,
+            new SearchFile,
+            new WriteFile,
         ];
     }
-//    public function schema(): array
-//    {
-//        return [
-//            'type'       => 'object',
-//            'properties' => [
-//                //'response'   => ['type' => 'string'],
-//                'nouns'      => ['type' => 'string'],
-//                'adjectives' => ['type' => 'string'],
-//                'verbs'      => ['type' => 'string'],
-//            ],
-//            //'required'             => ['response'],
-//            'required'             => ['nouns', 'adjectives', 'verbs'],
-//            'additionalProperties' => false,
-//        ];
-//    }
-
+    //    public function schema(): array
+    //    {
+    //        return [
+    //            'type'       => 'object',
+    //            'properties' => [
+    //                //'response'   => ['type' => 'string'],
+    //                'nouns'      => ['type' => 'string'],
+    //                'adjectives' => ['type' => 'string'],
+    //                'verbs'      => ['type' => 'string'],
+    //            ],
+    //            //'required'             => ['response'],
+    //            'required'             => ['nouns', 'adjectives', 'verbs'],
+    //            'additionalProperties' => false,
+    //        ];
+    //    }
 
 }

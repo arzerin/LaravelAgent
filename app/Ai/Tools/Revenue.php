@@ -1,26 +1,25 @@
 <?php
 
 namespace App\Ai\Tools;
-use App\Ai\Tools\Tool;
 
 class Revenue implements Tool
 {
     public function definition(): array
     {
         return [
-            'type'        => 'function',
-            'name'        => 'site_revenue',
+            'type' => 'function',
+            'name' => 'site_revenue',
             'description' => 'Get Revenue detail',
-            'parameters'  => [
-                'type'       => 'object',
+            'parameters' => [
+                'type' => 'object',
                 'properties' => [
                     'period' => [
-                        'type'        => 'string',
-                        'enum'        => ['daily', 'monthly', 'quarterly'],
-                        'description' => 'The eriod of time',
+                        'type' => 'string',
+                        'enum' => ['daily', 'monthly', 'quarterly'],
+                        'description' => 'The period of time',
                     ],
                 ],
-                'required'             => ['period'],
+                'required' => ['period'],
                 'additionalProperties' => false,
             ],
             'strict' => true,
@@ -32,11 +31,10 @@ class Revenue implements Tool
         $period = $arguments['period'];
 
         return [
-            'daily'     => 900,
-            'monthly'   => 30000,
+            'daily' => 900,
+            'monthly' => 30000,
             'quarterly' => 120000,
-            'yearly'    => 120000*4,
+            'yearly' => 120000 * 4,
         ][$period];
     }
-
 }
