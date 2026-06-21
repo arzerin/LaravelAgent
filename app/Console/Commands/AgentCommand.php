@@ -9,10 +9,19 @@
 
 namespace App\Console\Commands;
 
+use App\Ai\Tools\CurrentTime;
+use App\Ai\Tools\ReadFile;
+use App\Ai\Tools\Tool;
+
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+
+
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+
 
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\spin;
@@ -189,25 +198,43 @@ class AgentCommand extends Command
                 'model' => 'gpt-5.4-nano',
                 'instructions' => 'You are a helpful assistant.',
                 'input' => $this->history,
+                'tools' => array_map(fn (Tool $tool) => $tool->definition(), $this->tools()),
+            ])
+            ->throw()
+            ->json();
+    }
+
+    private function runModel_v1(): array
+    {
+        return Http::withToken(config('services.openai.key'))
+            ->acceptJson()
+            ->asJson()
+            ->timeout(30)
+            ->connectTimeout(10)
+            ->retry([100, 200])
+            ->post('https://api.openai.com/v1/responses', [
+                'model' => 'gpt-5.4-nano',
+                'instructions' => 'You are a helpful assistant.',
+                'input' => $this->history,
                 'tools' => [
                     [
-                        'type' => 'function',
-                        'name' => 'get_current_time',
+                        'type'        => 'function',
+                        'name'        => 'get_current_time',
                         'description' => 'Get the current server time as an ISO8601 string.',
                     ],
                     [
                         'type' => 'function',
                         'name' => 'read_file',
                         'description' => 'Read the contents of a file, relative to the project root.',
-                        'parameters' => [
-                            'type' => 'object',
+                        'parameters'  => [
+                            'type'       => 'object',
                             'properties' => [
                                 'path' => [
-                                    'type' => 'string',
+                                    'type'        => 'string',
                                     'description' => 'The relative path to the file.',
                                 ],
                             ],
-                            'required' => ['path'],
+                            'required'             => ['path'],
                             'additionalProperties' => false,
                         ],
                         'strict' => true,
